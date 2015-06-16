@@ -120,6 +120,62 @@ class TestSource:
         assert 'method call failed' in str(exc_info.value)
 
 
+class TestProperty:
+    def test_property(self):
+        class ExampleSerializer(serializers.Serializer):
+            example_property = serializers.CharField(read_only=True)
+
+        class ExampleInstance(object):
+            @property
+            def example_property(self):
+                return 'example property value'
+
+        serializer = ExampleSerializer(ExampleInstance())
+        assert serializer.data['example_property'] == 'example property value'
+
+    def test_property_source(self):
+        class ExampleSerializer(serializers.Serializer):
+            example_field = serializers.CharField(source='example_property', read_only=True)
+
+        class ExampleInstance(object):
+            @property
+            def example_property(self):
+                return 'example property value'
+
+        serializer = ExampleSerializer(ExampleInstance())
+        assert serializer.data['example_field'] == 'example property value'
+
+    def test_property_raises(self):
+        class ExampleSerializer(serializers.Serializer):
+            example_property = serializers.CharField(read_only=True)
+
+        class ExampleInstance(object):
+            @property
+            def example_property(self):
+                raise AttributeError('attribute error in @property')
+
+        with pytest.raises(ValueError) as exc_info:
+            serializer = ExampleSerializer(ExampleInstance())
+            serializer.data.items()
+
+        assert 'attribute error in @property' in str(exc_info.value)
+
+    def test_property_source_raises(self):
+        class ExampleSerializer(serializers.Serializer):
+            example_field = serializers.CharField(source='example_property', read_only=True)
+
+        class ExampleInstance(object):
+            @property
+            def example_property(self):
+                raise AttributeError('attribute error in @property')
+
+        with pytest.raises(ValueError) as exc_info:
+            serializer = ExampleSerializer(ExampleInstance())
+            serializer.data.items()
+
+        assert 'attribute error in @property' in str(exc_info.value)
+
+
 class TestReadOnly:
     def setup(self):
         class TestSerializer(serializers.Serializer):

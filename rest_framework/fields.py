@@ -53,6 +53,20 @@ def is_simple_callable(obj):
     return len_args <= len_defaults
 
 
+def wrapped_getattr(instance, attr):
+    """
+    Like Python's built in `getattr(instance, attr)`,
+    but wraps AttributeErrors from deeper in the stack
+    as ValueErrors
+    """
+    try:
+        return getattr(instance, attr)
+    except AttributeError as exc:
+        if type(exc) is not AttributeError or attr not in dir(instance):
+            raise exc
+        raise ValueError('Exception raised in attribute "{0}"; original exception was: {1}'.format(attr, exc))
+
+
 def get_attribute(instance, attrs):
     """
     Similar to Python's built in `getattr(instance, attr)`,
@@ -68,7 +82,7 @@ def get_attribute(instance, attrs):
             if isinstance(instance, collections.Mapping):
                 instance = instance[attr]
             else:
-                instance = getattr(instance, attr)
+                instance = wrapped_getattr(instance, attr)
         except ObjectDoesNotExist:
             return None
         if is_simple_callable(instance):
